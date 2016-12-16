@@ -2,8 +2,9 @@ import os,sys
 import pygame
 import level001
 import basicSprite
-import snakeSprite
+from snakeSprite import *
 from pygame.locals import *
+from basicMonster import Monster
 
 from helper import *
 
@@ -32,8 +33,10 @@ class PyManMain:
 		level1 = level001.level()
 		layout = level1.getLayout()
 		img_list = level1.getImages()
-		self.pellet_sprites = pygame.sprite.Group()
-		self.block_sprites = pygame.sprite.Group()
+		self.pellet_sprites = pygame.sprite.RenderUpdates()
+		self.block_sprites = pygame.sprite.RenderUpdates()
+		self.super_pellet_sprites = pygame.sprite.RenderUpdates()
+		self.monster_sprites = pygame.sprite.RenderUpdates()
 
 		for y in range(len(layout)):
 			for x in range(len(layout[y])):
@@ -46,8 +49,14 @@ class PyManMain:
 					pellet = basicSprite.Sprite(centerPoint,img_list[level1.pellet])
 					self.pellet_sprites.add(pellet)
 				elif layout[y][x] == level1.snake:
-					self.snake = snakeSprite.Snake(centerPoint,img_list[level1.snake])
-		self.snake_sprites = pygame.sprite.RenderPlain((self.snake))
+					self.snake = Snake(centerPoint,img_list[level1.snake])
+				elif layout[y][x] == level1.monster:
+					monster = Monster(centerPoint,img_list[level1.monster],img_list[level1.scared_monster])
+					self.monster_sprites.add(monster)
+				elif layout[y][x] == level1.super_pellet:
+					super_pellet = basicSprite.Sprite(centerPoint,img_list[level1.super_pellet])
+					self.super_pellet_sprites.add(super_pellet)
+		self.snake_sprites = pygame.sprite.RenderUpdates((self.snake))
 
 
 	def MainLoop(self):
@@ -56,7 +65,12 @@ class PyManMain:
 		self.background = pygame.Surface(self.screen.get_size())
 		self.background = self.background.convert()
 		self.background.fill((0,0,0))
+		self.block_sprites.draw(self.screen)
+		self.block_sprites.draw(self.background)
+		pygame.display.flip()
 		while 1:
+			self.snake_sprites.clear(self.screen,self.background)
+			self.monster_sprites.clear(self.screen,self.background)
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					pygame.quit()
@@ -68,20 +82,38 @@ class PyManMain:
 				elif event.type == KEYUP:
 					if event.key == K_RIGHT or (event.key == K_LEFT) or (event.key == K_UP) or (event.key == K_DOWN):
 						self.snake.MoveKeyUp(event.key)
+				elif event.type == SUPER_STATE_OVER:
+					self.snake.superState = False
+					pygame.time.set_timer(SUPER_STATE_OVER,0)
+					for monster in self.monster_sprites.sprites():
+						monster.setScared(False)
 
-			self.snake_sprites.update(self.block_sprites)
-			lstcols = pygame.sprite.spritecollide(self.snake,self.pellet_sprites,True)
-			self.snake.pellets = self.snake.pellets+len(lstcols)
+				elif event.type == SUPER_STATE_START:
+					for monster in self.monster_sprites:
+						monster.setScared(True)
+				elif event.type == SNAKE_EATEN:
+					sys.exit()
+
+			self.snake_sprites.update(self.block_sprites,self.pellet_sprites,self.super_pellet_sprites,self.monster_sprites)
+			self.monster_sprites.update(self.block_sprites)
+			testpos = 0
+
 			self.screen.blit(self.background,(0,0))
 			if pygame.font:
 				font = pygame.font.Font(None,36)
 				text = font.render("Pellets %s"%self.snake.pellets,1,(255,0,0))
 				textpos = text.get_rect(centerx = self.width/2)
 				self.screen.blit(text,textpos)
-			self.block_sprites.draw(self.screen)
-			self.pellet_sprites.draw(self.screen)
-			self.snake_sprites.draw(self.screen)
-			pygame.display.flip()
+
+			reclist = [textpos]
+
+			reclist+=self.super_pellet_sprites.draw(self.screen)
+			reclist+=self.pellet_sprites.draw(self.screen)
+			reclist+=self.snake_sprites.draw(self.screen)
+			reclist+=self.monster_sprites.draw(self.screen)
+
+			pygame.display.update(reclist)
+			#pygame.display.flip()
 
 
 # class Snake(pygame.sprite.Sprite):
