@@ -95,7 +95,7 @@ class PyManMain:
 					sys.exit()
 
 			self.snake_sprites.update(self.block_sprites,self.pellet_sprites,self.super_pellet_sprites,self.monster_sprites)
-			self.monster_sprites.update(self.block_sprites)
+			self.monster_sprites.update(self.block_sprites,self.snake_sprites)
 			testpos = 0
 
 			self.screen.blit(self.background,(0,0))

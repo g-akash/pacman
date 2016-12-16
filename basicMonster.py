@@ -20,7 +20,7 @@ class Monster(basicSprite.Sprite):
 		self.moves = random.randint(100,200)
 		self.moveCount = 0
 
-	def update(self,block_group):
+	def update(self,block_group,snake_group):
 		xmove,ymove = 0,0
 		if self.direction == 1:
 			xmove-=self.dist
@@ -42,6 +42,9 @@ class Monster(basicSprite.Sprite):
 			self.direction = random.randint(1,4)
 			self.moves = random.randint(100,200)
 			self.moveCount = 0
+		lst_snake = pygame.sprite.spritecollide(self,snake_group,False)
+		if len(lst_snake)>0:
+			lst_snake[0].MonsterCollide([self])
 
 	def eaten(self):
 		self.rect = self.original_rect
